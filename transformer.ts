@@ -11,11 +11,8 @@ const handleCall = (checker: ts.TypeChecker, node: ts.CallExpression) => {
 	const format = (method: Types, ...args: Array<ts.Expression>) => f.createArrayLiteralExpression([f.createNumericLiteral(method), ...args]);
 	const objectMember = (type: ObjectMembers, ...args: Array<ts.Expression>) => f.createArrayLiteralExpression([f.createNumericLiteral(type), ...args]);
 	const walkType = (type: ts.Type): ts.Expression => {
-		if(type.isUnionOrIntersection())
-			return format(
-				type.isUnion() ? Types.Union : Types.Intersection,
-				...type.types.map(walkType)
-			);
+		if(type.isIntersection())
+			return format(Types.Intersection, ...type.types.map(walkType));
 		const symbol = type.symbol ?? type.aliasSymbol;
 		if(symbol?.declarations) {
 			// @ts-expect-error TS does not expose this, but `Ambient` nodes are those in `declare` blocks or .d.ts files
@@ -46,6 +43,25 @@ const handleCall = (checker: ts.TypeChecker, node: ts.CallExpression) => {
 			return simpleFormat(Types.Boolean);
 		if(type.flags & ts.TypeFlags.Unknown)
 			return simpleFormat(Types.Unknown);
+		if(type.isUnion()) {
+			// The checker flattens union types, including booleans and enums. This handles those "base types".
+			// Adapted from `formatUnionTypes` in https://github.com/microsoft/TypeScript/blob/main/src/compiler/checker.ts
+			const types = [];
+			for(let i = 0; i < type.types.length; ++i) {
+				const part = type.types[i]!;
+				const baseType = checker.getBaseTypeOfLiteralType(part);
+				if(baseType.isUnion()) {
+					const count = baseType.types.length;
+					if (i + count <= type.types.length && type.types[i + count - 1] === baseType.types[count - 1]) {
+						types.push(baseType);
+						i += count - 1;
+						continue;
+					}
+				}
+				types.push(part);
+			}
+			return format(Types.Union, ...types.map(walkType));
+		}
 		if(type.flags & ts.TypeFlags.Null)
 			return format(Types.Literal, f.createNull());
 		if(type.flags & ts.TypeFlags.Undefined)

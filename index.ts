@@ -49,7 +49,8 @@ function validate(data: unknown, shape: Shape, path: string): ParserError | unkn
 					case ObjectMembers.Property:
 						const key = property[1];
 						const newPath = `${path}.${key}`;
-						if(!(key in object) && !property[3]) return fail(newPath, 'defined', 'undefined');
+						if(!(key in object))
+							return property[3] ? data : fail(newPath, 'defined', 'undefined');
 						const error = validateSet(object, key, property[2], newPath);
 						if(error) return error;
 						break;
