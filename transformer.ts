@@ -81,6 +81,8 @@ const handleCall = (checker: ts.TypeChecker, node: ts.CallExpression) => {
 				return objectMember(ObjectMembers.Property, ...args);
 			}));
 		}
+		if(type.flags & ts.TypeFlags.NonPrimitive)
+			return format(Types.Object);
 		throw new Error(`Cannot parse a ${checker.typeToString(type)}`);
 	};
 	// @ts-expect-error TS does not expose a general way to get a call expression's type parameters
