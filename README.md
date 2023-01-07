@@ -40,7 +40,7 @@ yarn install ts-safe-cast
 {
   "compilerOptions": {
     ...
-    "plugins": [ { "transform": "ts-safe-cast/transform" } ]
+    "plugins": [ { "transform": "ts-safe-cast/transformer" } ]
   }
 }
 ```
