@@ -2,7 +2,7 @@
   "compilerOptions": {
     "moduleResolution": "node",
     "module": "CommonJS",
-    "target": "es2020",
+    "target": "es2021",
     "strict": true,
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
