@@ -100,7 +100,7 @@ export default function(program: ts.Program): ts.TransformerFactory<ts.SourceFil
 		const visitor: ts.Visitor = (node) => {
 			if(ts.isCallExpression(node)) {
 				const type = checker.getTypeAtLocation(node.expression);
-				if(type?.symbol?.declarations?.[0]?.getSourceFile().fileName === path.join(__dirname, 'index.ts').replaceAll("\\", "/")) {
+				if(type?.symbol?.declarations?.[0]?.getSourceFile().fileName.endsWith("node_modules/ts-safe-cast/index.ts")) {
 					try {
 						const format = handleCall(checker, node);
 						return f.updateCallExpression(node, node.expression, node.typeArguments, [...node.arguments, format]);
