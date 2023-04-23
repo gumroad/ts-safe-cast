@@ -10,7 +10,8 @@ export const enum Types {
 	Literal,
 	Union,
 	Intersection,
-	Date
+	Date,
+	Reference
 }
 
 export const enum ObjectMembers {
@@ -30,5 +31,6 @@ export type Shape =
 	[Types.Literal, string | number | bigint | boolean | null | undefined] |
 	[Types.Union, ...Shape[]] |
 	[Types.Intersection, ...Shape[]] |
-	[Types.Object, ...(([ObjectMembers.Property, string, Shape, ...([true] | [])] | [ObjectMembers.IndexSignature, Shape])[])];
+	[Types.Object, ...(([ObjectMembers.Property, string, Shape, ...([true] | [])] | [ObjectMembers.IndexSignature, Shape])[])] |
+	[Types.Reference, ...number[]];
 

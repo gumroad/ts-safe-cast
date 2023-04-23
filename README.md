@@ -29,7 +29,7 @@ function safeLoad(): string {
 
 ## Installation
 ```shell
-yarn install ts-safe-cast
+pnpm install ts-safe-cast
 ```
 
 `ts-safe-cast` uses a TypeScript transformer that needs to be run at compile time to provide the necessary runtime information. To do this, you can use the [`getCustomTransformers`](https://github.com/TypeStrong/ts-loader#getcustomtransformers) option for `ts-loader` or [ttypescript](https://github.com/cevek/ttypescript).
@@ -52,7 +52,7 @@ If you test for the same type in multiple locations and your type is complex, it
 
 While the transformer comes pre-transpiled to JS, the runtime library is shipped as TypeScript, as it does not make sense to use outside a TS project, and this way you can compile it with your own settings.
 
-When compiling using file watchers, keep in mind that when you change a type defined in another file, the runtime formats might not be recompiled until you change that file, as well.
+When compiling using file watchers, keep in mind that when you change a type defined in another file, the runtime formats might not be recompiled until you change the file referencing it, as well.
 
 ## API
 

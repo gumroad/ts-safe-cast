@@ -8,11 +8,23 @@ const isReference = (type: ts.Type): type is ts.TypeReference => !!(objectFlags(
 const handleCall = (checker: ts.TypeChecker, node: ts.CallExpression) => {
 	const f = ts.factory;
 	const simpleFormat = f.createNumericLiteral;
-	const format = (method: Types, ...args: Array<ts.Expression>) => f.createArrayLiteralExpression([f.createNumericLiteral(method), ...args]);
-	const objectMember = (type: ObjectMembers, ...args: Array<ts.Expression>) => f.createArrayLiteralExpression([f.createNumericLiteral(type), ...args]);
+	const format = (method: Types, ...args: ts.Expression[]) => f.createArrayLiteralExpression([f.createNumericLiteral(method), ...args]);
+	const objectMember = (type: ObjectMembers, ...args: ts.Expression[]) => f.createArrayLiteralExpression([f.createNumericLiteral(type), ...args]);
+	const path: number[] = [];
+	const seenTypes = new Map<ts.Type, number[]>();
+	const walkWithPath = (type: ts.Type, ...newPath: number[]) => {
+		path.push(...newPath);
+		const def = walkType(type);
+		path.splice(path.length - newPath.length, newPath.length);
+		return def;
+	}
+	const walkTypes = (types: readonly ts.Type[]) => types.map((type, i) => walkWithPath(type, i + 1));
 	const walkType = (type: ts.Type): ts.Expression => {
+		const ref = seenTypes.get(type);
+		if(ref)
+			return format(Types.Reference, ...ref.map(f.createNumericLiteral));
 		if(type.isIntersection())
-			return format(Types.Intersection, ...type.types.map(walkType));
+			return format(Types.Intersection, ...walkTypes(type.types));
 		const symbol = type.symbol ?? type.aliasSymbol;
 		if(symbol?.declarations) {
 			// @ts-expect-error TS does not expose this, but `Ambient` nodes are those in `declare` blocks or .d.ts files
@@ -20,12 +32,12 @@ const handleCall = (checker: ts.TypeChecker, node: ts.CallExpression) => {
 				if(symbol.name === 'Date') return simpleFormat(Types.Date);
 				if(symbol.name === 'Array' || symbol.name === 'ReadonlyArray') {
 					const argument = (type as ts.TypeReference).typeArguments?.[0];
-					return format(Types.Array, argument ? walkType(argument) : simpleFormat(Types.Unknown));
+					return format(Types.Array, argument ? walkWithPath(argument, 1) : simpleFormat(Types.Unknown));
 				}
 			}
 		}
 		if(isReference(type) && objectFlags(type.target) & ts.ObjectFlags.Tuple)
-			return format(Types.Tuple, ...((type as ts.TupleType).typeArguments ?? []).map(walkType));
+			return format(Types.Tuple, ...walkTypes((type as ts.TupleType).typeArguments ?? []));
 		if(type.flags & ts.TypeFlags.StringLiteral)
 			return format(Types.Literal, f.createStringLiteral((type as ts.StringLiteralType).value));
 		if(type.flags & ts.TypeFlags.NumberLiteral)
@@ -60,7 +72,7 @@ const handleCall = (checker: ts.TypeChecker, node: ts.CallExpression) => {
 				}
 				types.push(part);
 			}
-			return format(Types.Union, ...types.map(walkType));
+			return format(Types.Union, ...walkTypes(types));
 		}
 		if(type.flags & ts.TypeFlags.Null)
 			return format(Types.Literal, f.createNull());
@@ -68,15 +80,16 @@ const handleCall = (checker: ts.TypeChecker, node: ts.CallExpression) => {
 			// @ts-expect-error TS does not expose a way to create an `undefined` Expression
 			return format(Types.Literal, f.createToken(ts.SyntaxKind.UndefinedKeyword));
 		if(type.flags & ts.TypeFlags.Object) {
+			seenTypes.set(type, path.slice());
 			const stringIndexType = type.getStringIndexType();
 			if(stringIndexType) {
 				if(stringIndexType.flags & ts.TypeFlags.Never)
 					return format(Types.Object);
-				return format(Types.Object, objectMember(ObjectMembers.IndexSignature, walkType(stringIndexType)));
+				return format(Types.Object, objectMember(ObjectMembers.IndexSignature, walkWithPath(stringIndexType, 1, 1)));
 			}
 			const properties = checker.getPropertiesOfType(type);
-			return format(Types.Object, ...properties.map((member) => {
-				const args = [f.createStringLiteral(member.name), walkType(checker.getTypeOfSymbolAtLocation(member, node))];
+			return format(Types.Object, ...properties.map((member, i) => {
+				const args = [f.createStringLiteral(member.name), walkWithPath(checker.getTypeOfSymbolAtLocation(member, node), i + 1, 2)];
 				if(member.flags & ts.SymbolFlags.Optional) args.push(f.createTrue());
 				return objectMember(ObjectMembers.Property, ...args);
 			}));
@@ -93,7 +106,7 @@ const handleCall = (checker: ts.TypeChecker, node: ts.CallExpression) => {
 
 export default function(program: ts.Program): ts.TransformerFactory<ts.SourceFile> {
 	return (context) => (file) => {
-		if(path.dirname(file.fileName) === __dirname) return file;
+		if(path.dirname(file.fileName) === __dirname || file.isDeclarationFile || path.extname(file.fileName) === ".js") return file;
 		const f = context.factory;
 		const checker = program.getTypeChecker();
 
@@ -107,7 +120,7 @@ export default function(program: ts.Program): ts.TransformerFactory<ts.SourceFil
 					} catch(e) {
 						if(!(e instanceof Error)) throw e;
 						const location = file.getLineAndCharacterOfPosition(node.pos);
-						throw new Error(`ts-safe-cast transformer error: ${e.message}  at ${file.fileName}:${location.line + 1}:${location.character + 1}`);
+						throw new Error(`ts-safe-cast transformer error: ${e.message} at ${file.fileName}:${location.line + 1}:${location.character + 1}`);
 					}
 				}
 			}
