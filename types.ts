@@ -19,6 +19,11 @@ export const enum ObjectMembers {
 	IndexSignature
 }
 
+export const enum TupleElementType {
+	Optional = 1,
+	Variable = 2,
+}
+
 export type Shape =
 	Types.String |
 	Types.Number |
@@ -27,10 +32,10 @@ export type Shape =
 	Types.Bigint |
 	Types.Date |
 	[Types.Array, Shape] |
-	[Types.Tuple, Shape] |
+	[Types.Tuple, ...([Shape, TupleElementType?][])] |
 	[Types.Literal, string | number | bigint | boolean | null | undefined] |
 	[Types.Union, ...Shape[]] |
 	[Types.Intersection, ...Shape[]] |
-	[Types.Object, ...(([ObjectMembers.Property, string, Shape, ...([true] | [])] | [ObjectMembers.IndexSignature, Shape])[])] |
+	[Types.Object, ...(([ObjectMembers.Property, string, Shape, true?] | [ObjectMembers.IndexSignature, Shape])[])] |
 	[Types.Reference, ...number[]];
 

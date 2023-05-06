@@ -1,4 +1,4 @@
-import {ObjectMembers, Shape, Types} from './types';
+import {ObjectMembers, Shape, TupleElementType, Types} from './types';
 
 class ParserError extends Error {}
 
@@ -66,11 +66,28 @@ function validate(data: unknown, root: Shape) {
 			}
 			case Types.Tuple: {
 				const [_, ...items] = shape;
-				if(!Array.isArray(data) || data.length !== items.length) return fail(path, `a ${items.length}-tuple`, data);
-				for(const [i, shape] of items.entries()) {
-					const error = walk(data[i], shape, `${path}.${i}`);
-					if(error) return error;
+				if(!Array.isArray(data)) return fail(path, `a tuple`, data);
+				let min = 0, max = 0;
+				for(const [shape, type] of items) {
+					if(type) {
+						for(; max < data.length;) {
+							const error = walk(data[max], shape, `${path}.${max}`);
+							if(!error) ++max;
+							if(error || type === TupleElementType.Optional) break;
+						}
+					} else {
+						for(;;) {
+							const error = walk(data[min], shape, `${path}.${min}`);
+							++min;
+							if(!error) {
+								if(min >= max) max = min;
+								break;
+							}
+							else if(min > max) return error;
+						}
+					}
 				}
+				if(max < data.length) return fail(path, `a tuple`, data);
 				return;
 			}
 			case Types.Literal: {

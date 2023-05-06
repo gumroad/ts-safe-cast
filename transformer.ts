@@ -1,9 +1,6 @@
 import * as path from 'path';
 import * as ts from 'typescript';
-import {ObjectMembers, Types} from './types';
-
-const objectFlags = (type: ts.Type) => (type as ts.ObjectType).objectFlags ?? 0;
-const isReference = (type: ts.Type): type is ts.TypeReference => !!(objectFlags(type) & ts.ObjectFlags.Reference);
+import {ObjectMembers, TupleElementType, Types} from './types';
 
 const handleCall = (checker: ts.TypeChecker, node: ts.CallExpression) => {
 	const f = ts.factory;
@@ -30,14 +27,22 @@ const handleCall = (checker: ts.TypeChecker, node: ts.CallExpression) => {
 			// @ts-expect-error TS does not expose this, but `Ambient` nodes are those in `declare` blocks or .d.ts files
 			if(symbol.declarations.some((node) => node.flags & ts.NodeFlags.Ambient)) {
 				if(symbol.name === 'Date') return simpleFormat(Types.Date);
-				if(symbol.name === 'Array' || symbol.name === 'ReadonlyArray') {
-					const argument = (type as ts.TypeReference).typeArguments?.[0];
-					return format(Types.Array, argument ? walkWithPath(argument, 1) : simpleFormat(Types.Unknown));
-				}
 			}
 		}
-		if(isReference(type) && objectFlags(type.target) & ts.ObjectFlags.Tuple)
-			return format(Types.Tuple, ...walkTypes((type as ts.TupleType).typeArguments ?? []));
+		if(checker.isArrayType(type)) {
+			const argument = (type as ts.TypeReference).typeArguments?.[0];
+			return format(Types.Array, argument ? walkWithPath(argument, 1) : simpleFormat(Types.Unknown));
+		}
+		if(checker.isTupleType(type)) {
+			const elementFlags = ((type as ts.TypeReference).target as ts.TupleType).elementFlags;
+			return format(Types.Tuple, ...((type as ts.TupleType).typeArguments ?? []).map((type, i) => {
+				const array = [walkWithPath(type, i + 1, 1)];
+				const flags = elementFlags[i]!;
+				if(!(flags & ts.ElementFlags.Required))
+					array.push(f.createNumericLiteral((flags & ts.ElementFlags.Variable) ? TupleElementType.Variable : TupleElementType.Optional));
+				return f.createArrayLiteralExpression(array);
+			}));
+		}
 		if(type.flags & ts.TypeFlags.StringLiteral)
 			return format(Types.Literal, f.createStringLiteral((type as ts.StringLiteralType).value));
 		if(type.flags & ts.TypeFlags.NumberLiteral)
