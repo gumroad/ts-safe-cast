@@ -116,6 +116,7 @@ export default function(program: ts.Program): ts.TransformerFactory<ts.SourceFil
 		const checker = program.getTypeChecker();
 
 		const visitor: ts.Visitor = (node) => {
+			node = ts.visitEachChild(node, visitor, context);
 			if(ts.isCallExpression(node)) {
 				const type = checker.getTypeAtLocation(node.expression);
 				if(type?.symbol?.declarations?.[0]?.getSourceFile().fileName.endsWith("node_modules/ts-safe-cast/index.ts")) {
@@ -129,7 +130,7 @@ export default function(program: ts.Program): ts.TransformerFactory<ts.SourceFil
 					}
 				}
 			}
-			return ts.visitEachChild(node, visitor, context);
+			return node;
 		};
 		return ts.visitEachChild(file, visitor, context);
 	};
