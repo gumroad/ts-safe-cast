@@ -1,7 +1,9 @@
-import * as path from 'path';
-import * as ts from 'typescript';
-import {ObjectMembers, TupleElementType, Types} from './types';
+import path from 'path';
+import ts from 'typescript';
+import url from 'url';
+import {ObjectMembers, TupleElementType, Types} from './types.js';
 
+const dirname = import.meta.dirname ?? path.dirname(url.fileURLToPath(import.meta.url));
 const handleCall = (checker: ts.TypeChecker, node: ts.CallExpression) => {
 	const f = ts.factory;
 	const simpleFormat = f.createNumericLiteral;
@@ -111,7 +113,7 @@ const handleCall = (checker: ts.TypeChecker, node: ts.CallExpression) => {
 
 export default function(program: ts.Program): ts.TransformerFactory<ts.SourceFile> {
 	return (context) => (file) => {
-		if(path.dirname(file.fileName) === __dirname || file.isDeclarationFile || path.extname(file.fileName) === ".js") return file;
+		if(path.dirname(file.fileName) === dirname || file.isDeclarationFile || path.extname(file.fileName) === ".js") return file;
 		const f = context.factory;
 		const checker = program.getTypeChecker();
 

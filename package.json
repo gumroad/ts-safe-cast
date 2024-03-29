@@ -1,17 +1,18 @@
 {
   "name": "ts-safe-cast",
-  "version": "0.2.4",
+  "version": "1.0.0",
   "main": "index.ts",
   "author": "Gumroad Developers",
   "license": "MIT",
+  "type": "module",
   "peerDependencies": {
     "typescript": ">=4.6"
   },
   "devDependencies": {
-    "typescript": "^5.0.4"
+    "typescript": "~5.4.3"
   },
   "dependencies": {
-    "@types/node": "^18.16.0"
+    "@types/node": "^20.11.30"
   },
   "repository": {
     "type": "git",

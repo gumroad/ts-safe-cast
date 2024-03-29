@@ -1,15 +1,17 @@
 {
   "compilerOptions": {
-    "moduleResolution": "node",
-    "module": "CommonJS",
-    "target": "es2021",
+    "module": "nodenext",
+    "target": "es2022",
     "strict": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "exactOptionalPropertyTypes": true,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "exactOptionalPropertyTypes": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true
+    "forceConsistentCasingInFileNames": true,
   },
   "files": ["transformer.ts"]
 }
