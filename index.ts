@@ -1,4 +1,4 @@
-import {ObjectMembers, type Shape, TupleElementType, Types} from './types.js';
+import {ObjectMembers, type Shape, TupleElementType, Types} from './types';
 
 class ParserError extends Error {}
 
