@@ -1,6 +1,6 @@
 {
   "name": "ts-safe-cast",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "index.ts",
   "author": "Gumroad Developers",
   "license": "MIT",
@@ -20,5 +20,6 @@
   },
   "scripts": {
     "build": "tsc"
-  }
+  },
+  "packageManager": "pnpm@9.0.2+sha1.2a34aeb80bf8e8435815d14f620ec4ba0eff1604"
 }

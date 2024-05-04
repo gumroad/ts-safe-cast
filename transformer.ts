@@ -38,7 +38,7 @@ const handleCall = (checker: ts.TypeChecker, node: ts.CallExpression) => {
 		if(checker.isTupleType(type)) {
 			const elementFlags = ((type as ts.TypeReference).target as ts.TupleType).elementFlags;
 			return format(Types.Tuple, ...((type as ts.TupleType).typeArguments ?? []).map((type, i) => {
-				const array = [walkWithPath(type, i + 1, 1)];
+				const array = [walkWithPath(type, i + 1, 0)];
 				const flags = elementFlags[i]!;
 				if(!(flags & ts.ElementFlags.Required))
 					array.push(f.createNumericLiteral((flags & ts.ElementFlags.Variable) ? TupleElementType.Variable : TupleElementType.Optional));
